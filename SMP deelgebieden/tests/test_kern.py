@@ -74,6 +74,27 @@ def test_lees_overpass():
     assert kern.lees_overpass_vlakken(data)[0]["geometry"].geom_type == "Polygon"
 
 
+def test_voronoi_zonder_ordered(monkeypatch):
+    """shapely < 2.1 kent voronoi_polygons(ordered=...) niet; de terugval moet dezelfde cellen geven."""
+    import shapely
+    from shapely.geometry import box
+    pts = np.random.default_rng(1).uniform(0, 1000, (300, 2))
+    rand = box(-500, -500, 1500, 1500)
+    verwacht = kern._voronoi_cellen(pts, rand)
+    origineel = shapely.voronoi_polygons
+
+    def oud(geom, tolerance=0.0, extend_to=None, only_edges=False, **kw):
+        if "ordered" in kw:
+            raise TypeError("voronoi_polygons() got an unexpected keyword argument 'ordered'")
+        return origineel(geom, tolerance=tolerance, extend_to=extend_to, only_edges=only_edges)
+
+    monkeypatch.setattr(shapely, "voronoi_polygons", oud)
+    terugval = kern._voronoi_cellen(pts, rand)
+    assert len(terugval) == len(pts)
+    assert all(a.equals(b) for a, b in zip(verwacht, terugval))
+    assert all(c.contains(shapely.Point(p)) for c, p in zip(terugval, pts))
+
+
 @pytest.mark.traag
 @pytest.mark.parametrize("met_grenslijn", [False, True])
 def test_indelen_invarianten(netwerk, grens, met_grenslijn):

@@ -847,6 +847,20 @@ def _maak_glad(nw, gebieden, zone_g, straal, max_m, max_ha, log, gestopt, rondes
     return [g for g, _ in paren], [z for _, z in paren]
 
 
+def _voronoi_cellen(pts, extend_to):
+    """Voronoi-cel per punt, in dezelfde volgorde als de punten. shapely < 2.1 kent 'ordered' niet;
+    dan zoeken we per punt de cel waar het in ligt (zelfde uitkomst)."""
+    try:
+        return list(shapely.voronoi_polygons(MultiPoint(pts), extend_to=extend_to, ordered=True).geoms)
+    except TypeError:
+        pass
+    cellen = list(shapely.voronoi_polygons(MultiPoint(pts), extend_to=extend_to).geoms)
+    p_idx, c_idx = shapely.STRtree(cellen).query(shapely.points(pts), predicate="within")
+    volgorde = np.full(len(pts), -1)
+    volgorde[p_idx] = c_idx
+    return [cellen[c] if c >= 0 else shapely.Polygon() for c in volgorde]
+
+
 def _maak_vlakken(nw, gebieden, zones, zone_g, vereenvoudig=0, zone_poly=None):
     """Vlak per gebied: elk stuk grond hoort bij het gebied van de dichtstbijzijnde verplichte straat
     binnen dezelfde zone. Met 'vereenvoudig' (m) worden de grenzen rechter getrokken."""
@@ -875,9 +889,8 @@ def _maak_vlakken(nw, gebieden, zones, zone_g, vereenvoudig=0, zone_poly=None):
                     lab.append(i + 1)
         pts = np.array(pts)
         _, idx = np.unique(np.round(pts, 1), axis=0, return_index=True)
-        vor = shapely.voronoi_polygons(MultiPoint(pts[idx]), extend_to=zpoly.buffer(1000), ordered=True)
         lab = np.array(lab)[idx]
-        cellen = list(vor.geoms)
+        cellen = _voronoi_cellen(pts[idx], zpoly.buffer(1000))
         for i in mijn:
             vlakken[i + 1] = shapely.union_all([c for c, l in zip(cellen, lab) if l == i + 1]).intersection(zpoly)
     if vereenvoudig and hasattr(shapely, "coverage_simplify") and len(vlakken) > 1:
