@@ -8,8 +8,11 @@ staan het doel, het algoritme, de besluiten, de bekende problemen en de backlog.
 - `smp_deelgebieden/`: de plugin (dit hele mapje gaat in de ZIP)
   - `fietsronde_kern.py`: alle rekenlogica. **Geen QGIS- of geopandas-imports**, alleen shapely ≥ 2, numpy, networkx.
   - `algoritmes.py`: Processing-algoritmes, I/O (QGIS ↔ records), opmaak. Geen rekenlogica hier.
+  - `installatie.py`: stap 0 (pip). Geen QGIS-imports, zodat pytest het kan testen.
 - `scripts/`: CLI-versies (geopandas voor I/O).
-- `tests/test_kern.py`: pytest op de kern. `tests/qgis_rooktest.py`: draait de plugin in PyQGIS.
+- `tests/test_kern.py`, `tests/test_installatie.py`: pytest. `tests/qgis_rooktest.py`, `tests/qgis_downloadtest.py`: draaien de plugin in PyQGIS.
+- Deze map staat in de repo `qgis-tools`; de CI-workflow staat in `../.github/workflows/smp-deelgebieden.yml`.
+- Licentie van de plugin: GPL-2.0-or-later (`smp_deelgebieden/LICENSE`); de rest van qgis-tools is MIT.
 - `testdata/`: OSM-uitsnede Westervoort (grens `gangstervoort`, lagen `highway`, `building`) + grenslijn.
 
 ## Werkafspraken
@@ -29,15 +32,17 @@ staan het doel, het algoritme, de besluiten, de bekende problemen en de backlog.
 ```bash
 pip install -r requirements-dev.txt
 pytest -q -m "not traag"        # snel (< 30 s)
-pytest -q                       # alles, ±4,5 min (volledige indeling testgebied, met en zonder grenslijn)
+pytest -q                       # alles, 5–13 min (volledige indeling testgebied, met en zonder grenslijn)
 python scripts/stap1_netwerk.py --gpkg testdata/westervoort_osm.gpkg --grens gangstervoort --wegen highway --gebouwen building --uit /tmp/netwerk.gpkg
 python scripts/stap2_indelen.py --netwerk /tmp/netwerk.gpkg --max_km 7 --uit /tmp/indeling.gpkg
-python tests/qgis_rooktest.py   # met de Python van QGIS (zie kop van het bestand)
+python tests/qgis_rooktest.py   # met de Python van QGIS (zie kop van het bestand), ±5 min
+python tests/qgis_downloadtest.py  # idem, stap 1 met download uit OSM (heeft internet nodig)
 python scripts/maak_zip.py      # dist/smp_deelgebieden-<versie>.zip om in QGIS te installeren
 ```
 
 ## Valkuilen
-- De gebruiker draait QGIS 3.44 op **macOS**. Dat er geen shapely 2.1+ is (dus geen `coverage_simplify`), moet stil terugvallen.
+- De gebruiker draait QGIS 3.44 op **macOS**, collega's waarschijnlijk op Windows. Mogelijk is er geen shapely 2.1+ (dus geen `coverage_simplify` en geen `voronoi_polygons(ordered=...)`); dat moet stil terugvallen. CI test met shapely 2.0. Gebruik geen shapely-functies of -parameters van na 2.0 zonder terugval.
+- Stap 1 en 2 controleren vóór het rekenen dat het uitvoerbestand geen invoer is en niet in het project geladen is (`controleer_uitvoer`); houd dat zo.
 - Bewaar in PyQGIS-tests een referentie naar de provider.
 - Schrijf geen `fid` mee naar GeoPackage-uitvoer.
 - Overpass-servers geven geregeld 502/429. Altijd terugvallen op de volgende server en een duidelijke fout met het QuickOSM-alternatief.
