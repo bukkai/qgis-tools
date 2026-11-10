@@ -555,6 +555,30 @@ class Netwerk:
         return eids[::-1]
 
 
+def bijna_verbonden(nw, afstand):
+    """Ids van lijnen met een los eindpunt dat binnen 'afstand' m van een andere lijn ligt, maar daar niet
+    mee verbonden is (bijvoorbeeld een steegje bijgetekend zonder snappen)."""
+    graad = Counter()
+    for u, v, *_ in nw.e.values():
+        graad[u] += 1
+        graad[v] += 1
+    eids = list(nw.geom)
+    boom = shapely.STRtree([nw.geom[e] for e in eids])
+    uit = []
+    for e, (u, v, *_) in nw.e.items():
+        for n in (u, v):
+            if graad[n] != 1:
+                continue
+            for j in boom.query(Point(nw.xy[n]), predicate="dwithin", distance=afstand):
+                f = eids[j]
+                if f != e and n not in nw.e[f][:2]:
+                    uit.append(e)
+                    break
+            if uit and uit[-1] == e:
+                break
+    return sorted(uit)
+
+
 def route(nw, eids):
     """Kortste rondrit langs alle eids (rural postman). Geeft (lengte_m, extra eids)."""
     eids = list(eids)
@@ -953,6 +977,11 @@ def indelen(netwerk, grens, max_km=7.0, max_ha=None, snap=0.5, log=print, gestop
         raise ValueError("Er zijn geen verplichte stukken in het netwerk.")
     vl = sum(nw.e[e][2] for e in nw.verplicht)
     log(f"Netwerk: {len(nw.e)} stukken, {len(nw.xy)} knopen; verplicht {vl / 1000:.1f} km")
+    bijna = bijna_verbonden(nw, max(snap, 1.0))
+    if bijna:
+        log(f"LET OP: {len(bijna)} lijnen eindigen vlak naast een andere lijn, maar zijn er niet mee verbonden "
+            f"(id {', '.join(str(e) for e in bijna[:20])}{' …' if len(bijna) > 20 else ''} in de netwerklaag van de "
+            "uitvoer). Teken ze opnieuw met snappen aan, anders rijdt de route er niet langs.")
 
     # losse delen van het netwerk: elk deel apart indelen; kleine eilandjes (< 300 m) overslaan
     G = nx.Graph([(x[0], x[1]) for x in nw.e.values()])
@@ -1046,6 +1075,12 @@ def indelen(netwerk, grens, max_km=7.0, max_ha=None, snap=0.5, log=print, gestop
         r["gebied"] = gebied_van.get(r["id"], 0)
         r["los"] = int(r["id"] in los)
     uit["netwerk"] = net
+    for s, g in zip(uit["samenvatting"], gebieden):
+        if s["route_km"] > max_km:
+            langste = max(g, key=lambda e: nw.e[e][2])
+            log(f"LET OP: ronde {s['gebied']} is {s['route_km']:.2f} km, langer dan het maximum van {max_km:g} km. "
+                f"Eén stuk ({nw.naam.get(langste) or 'zonder naam'}, id {langste}, {nw.e[langste][2]:.0f} m) "
+                "is al te lang om heen en terug te rijden. Knip het op, zet het op optioneel of verhoog het maximum.")
     tot_v = sum(s["verplicht_km"] for s in uit["samenvatting"])
     tot_r = sum(s["route_km"] for s in uit["samenvatting"])
     log(f"Klaar: {len(gebieden)} gebieden; verplicht {tot_v:.1f} km, te fietsen {tot_r:.1f} km")

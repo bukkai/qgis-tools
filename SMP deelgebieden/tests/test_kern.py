@@ -95,6 +95,41 @@ def test_voronoi_zonder_ordered(monkeypatch):
     assert all(c.contains(shapely.Point(p)) for c, p in zip(terugval, pts))
 
 
+def _vierkant(extra):
+    from shapely.geometry import LineString
+    hoeken = [(0, 0), (500, 0), (500, 500), (0, 500), (0, 0)]
+    net = [dict(id=i, status="verplicht", gewicht=1, naam=f"straat {i}", geometry=LineString([a, b]))
+           for i, (a, b) in enumerate(zip(hoeken, hoeken[1:]), 1)]
+    return net + [dict(id=None, status="verplicht", gewicht=1, naam="steeg", geometry=LineString(extra))]
+
+
+def test_waarschuwing_bijna_verbonden():
+    """Een lijn die 0,3 m naast een kruispunt eindigt, is niet verbonden: dat moet gemeld worden."""
+    from shapely.geometry import box
+    meldingen = []
+    kern.indelen(_vierkant([(0.3, 0.0), (499.7, 500.0)]), box(-10, -10, 510, 510), 7, log=meldingen.append)
+    assert any("niet mee verbonden" in m for m in meldingen)
+    meldingen.clear()
+    kern.indelen(_vierkant([(0, 0), (500, 500)]), box(-10, -10, 510, 510), 7, log=meldingen.append)
+    assert not any("niet mee verbonden" in m for m in meldingen)
+
+
+def test_waarschuwing_te_lang_stuk():
+    """Eén doodlopend stuk dat heen en terug al langer is dan het maximum: melden, niet stil doorgaan."""
+    from shapely.geometry import LineString, box
+    net = [dict(id=1, status="verplicht", gewicht=1, naam="Lange Dijk", geometry=LineString([(0, 0), (4000, 0)]))]
+    meldingen = []
+    uit = kern.indelen(net, box(-10, -10, 4010, 10), 7, log=meldingen.append)
+    assert uit["samenvatting"][0]["route_km"] > 7
+    assert any("langer dan het maximum" in m and "Lange Dijk" in m for m in meldingen)
+
+
+def test_bijna_verbonden_testgebied(netwerk):
+    """Op het echte testgebied mag de melding niet bij elk stukje afgaan."""
+    nw = kern.Netwerk(kern.bereid_netwerk([dict(r) for r in netwerk], log=lambda *_: None))
+    assert len(kern.bijna_verbonden(nw, 1.0)) < 25
+
+
 @pytest.mark.traag
 @pytest.mark.parametrize("met_grenslijn", [False, True])
 def test_indelen_invarianten(netwerk, grens, met_grenslijn):
