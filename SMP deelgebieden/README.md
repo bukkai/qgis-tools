@@ -1,12 +1,13 @@
-# Ekoza fietsrondes
+# SMP deelgebieden
 
 QGIS-plugin om een projectgebied voor soortenmonitoring op te delen in **fietsrondes van maximaal X km**,
 met per ronde de **kortste route** langs alle te tellen straten, steegjes en paden.
 
 ## Installeren
-1. Download `ekoza_fietsrondes-<versie>.zip` (of maak hem met `python scripts/maak_zip.py`).
+1. Download `smp_deelgebieden-<versie>.zip` (of maak hem met `python scripts/maak_zip.py`).
 2. QGIS → *Plugins → Beheren en installeren → Installeren vanaf ZIP*. Sta zo nodig experimentele plugins toe.
-3. In de Processing Toolbox verschijnt **Ekoza fietsrondes**. Draai eenmalig **0. Benodigdheden controleren** en start QGIS opnieuw.
+3. In de Processing Toolbox verschijnt **SMP deelgebieden**. Draai eenmalig **0. Benodigdheden controleren** en start QGIS opnieuw.
+4. Had je de oude versie **Ekoza fietsrondes** geïnstalleerd? Verwijder die dan (Plugins → Beheren en installeren → Geïnstalleerd), anders staan beide in de toolbox.
 
 ## Gebruik
 1. **Netwerk maken**: kies de projectgrens. Wegen en gebouwen kun je leeg laten (dan komen ze uit OpenStreetMap) of zelf opgeven (QuickOSM, BAG). Kijk de laag `netwerk` na: kolommen `status`, `gewicht`, `reden`. Pas aan waar nodig en sla op.

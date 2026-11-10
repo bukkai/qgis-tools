@@ -17,7 +17,7 @@ import pytest
 
 geopandas = pytest.importorskip("geopandas")
 HIER = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HIER, "..", "ekoza_fietsrondes"))
+sys.path.insert(0, os.path.join(HIER, "..", "smp_deelgebieden"))
 import fietsronde_kern as kern  # noqa: E402
 
 GPKG = os.path.join(HIER, "..", "testdata", "westervoort_osm.gpkg")

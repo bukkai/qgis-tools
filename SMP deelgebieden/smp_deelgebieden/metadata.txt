@@ -1,5 +1,5 @@
 [general]
-name=Ekoza fietsrondes
+name=SMP deelgebieden
 qgisMinimumVersion=3.22
 description=Deelt een projectgebied op in fietsrondes van maximaal X km en berekent per ronde de kortste route langs alle straten.
 about=Voor SMP-inventarisaties per fiets. Stap 1 maakt van OSM-wegen een netwerk (verplicht / optioneel / uit, met samengevoegde rotondes en dubbele rijbanen), dat je in QGIS kunt nakijken. Stap 2 deelt het gebied in en berekent per deelgebied de kortste ronde (Chinese/Rural Postman) met volgorde, GPX en kaartlagen. Nodig: shapely, numpy en networkx in de Python van QGIS (stap 0 controleert en installeert).

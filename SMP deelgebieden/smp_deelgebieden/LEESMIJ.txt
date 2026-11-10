@@ -1,10 +1,10 @@
-Ekoza fietsrondes - QGIS-plugin
+SMP deelgebieden - QGIS-plugin
 ==============================
 
 Installeren
-  QGIS > Plugins > Beheren en installeren > Installeren vanaf ZIP > ekoza_fietsrondes.zip
+  QGIS > Plugins > Beheren en installeren > Installeren vanaf ZIP > smp_deelgebieden.zip
   (bij "experimentele plugins" eventueel aanvinken onder Instellingen).
-  De toolbox staat daarna in de Processing Toolbox onder "Ekoza fietsrondes".
+  De toolbox staat daarna in de Processing Toolbox onder "SMP deelgebieden".
 
   Eenmalig: draai "0. Benodigdheden controleren" (installeert networkx/shapely als die ontbreken)
   en start QGIS daarna opnieuw.

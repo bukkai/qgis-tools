@@ -1,4 +1,4 @@
-"""Processing-algoritmes van de Ekoza fietsrondes-toolbox."""
+"""Processing-algoritmes van de SMP deelgebieden-toolbox."""
 import importlib, json, os, shutil, subprocess, sys
 from urllib.parse import quote
 

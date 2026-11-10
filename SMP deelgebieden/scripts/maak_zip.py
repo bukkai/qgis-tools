@@ -1,14 +1,14 @@
-"""Maakt dist/ekoza_fietsrondes-<versie>.zip om in QGIS te installeren ('Installeren vanaf ZIP')."""
+"""Maakt dist/smp_deelgebieden-<versie>.zip om in QGIS te installeren ('Installeren vanaf ZIP')."""
 import configparser, os, zipfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PLUGIN = os.path.join(ROOT, "ekoza_fietsrondes")
+PLUGIN = os.path.join(ROOT, "smp_deelgebieden")
 
 meta = configparser.ConfigParser()
 meta.read(os.path.join(PLUGIN, "metadata.txt"), encoding="utf-8")
 versie = meta["general"]["version"]
 os.makedirs(os.path.join(ROOT, "dist"), exist_ok=True)
-doel = os.path.join(ROOT, "dist", f"ekoza_fietsrondes-{versie}.zip")
+doel = os.path.join(ROOT, "dist", f"smp_deelgebieden-{versie}.zip")
 with zipfile.ZipFile(doel, "w", zipfile.ZIP_DEFLATED) as z:
     for map_, mappen, bestanden in os.walk(PLUGIN):
         mappen[:] = [m for m in mappen if m != "__pycache__"]

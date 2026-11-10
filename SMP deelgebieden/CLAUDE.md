@@ -1,11 +1,11 @@
-# CLAUDE.md: Ekoza fietsrondes
+# CLAUDE.md: SMP deelgebieden
 
 QGIS-plugin waarmee ecologen van Ekoza een projectgebied opdelen in fietsrondes (max. X km) en per
 ronde de kortste route langs alle te tellen straten krijgen. **Lees eerst `docs/BRIEF.md`**: daarin
 staan het doel, het algoritme, de besluiten, de bekende problemen en de backlog.
 
 ## Structuur
-- `ekoza_fietsrondes/`: de plugin (dit hele mapje gaat in de ZIP)
+- `smp_deelgebieden/`: de plugin (dit hele mapje gaat in de ZIP)
   - `fietsronde_kern.py`: alle rekenlogica. **Geen QGIS- of geopandas-imports**, alleen shapely ≥ 2, numpy, networkx.
   - `algoritmes.py`: Processing-algoritmes, I/O (QGIS ↔ records), opmaak. Geen rekenlogica hier.
 - `scripts/`: CLI-versies (geopandas voor I/O).
@@ -33,7 +33,7 @@ pytest -q                       # alles, ±4,5 min (volledige indeling testgebie
 python scripts/stap1_netwerk.py --gpkg testdata/westervoort_osm.gpkg --grens gangstervoort --wegen highway --gebouwen building --uit /tmp/netwerk.gpkg
 python scripts/stap2_indelen.py --netwerk /tmp/netwerk.gpkg --max_km 7 --uit /tmp/indeling.gpkg
 python tests/qgis_rooktest.py   # met de Python van QGIS (zie kop van het bestand)
-python scripts/maak_zip.py      # dist/ekoza_fietsrondes-<versie>.zip om in QGIS te installeren
+python scripts/maak_zip.py      # dist/smp_deelgebieden-<versie>.zip om in QGIS te installeren
 ```
 
 ## Valkuilen

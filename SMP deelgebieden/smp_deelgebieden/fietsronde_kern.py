@@ -1131,7 +1131,7 @@ def indelen(netwerk, grens, max_km=7.0, max_ha=None, snap=0.5, log=print, gestop
 
 def gpx_tekst(naam, coords_wgs):
     regels = ['<?xml version="1.0" encoding="UTF-8"?>',
-              '<gpx version="1.1" creator="Ekoza fietsrondes" xmlns="http://www.topografix.com/GPX/1/1">',
+              '<gpx version="1.1" creator="SMP deelgebieden" xmlns="http://www.topografix.com/GPX/1/1">',
               f"<trk><name>{naam}</name><trkseg>"]
     regels += [f'<trkpt lat="{y:.7f}" lon="{x:.7f}"/>' for x, y in coords_wgs]
     regels.append("</trkseg></trk></gpx>")

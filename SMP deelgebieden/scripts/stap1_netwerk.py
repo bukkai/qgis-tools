@@ -8,7 +8,7 @@ De rekenregels (TYPES: welk wegtype verplicht/optioneel/uit) staan in fietsronde
 """
 import argparse, os, sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ekoza_fietsrondes"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "smp_deelgebieden"))
 import geopandas as gpd
 import fietsronde_kern as kern
 

@@ -26,9 +26,9 @@ sys.path.insert(0, ROOT)
 from processing.core.Processing import Processing  # noqa: E402
 Processing.initialize()
 import processing  # noqa: E402
-from ekoza_fietsrondes.provider import FietsrondesProvider  # noqa: E402
+from smp_deelgebieden.provider import DeelgebiedenProvider  # noqa: E402
 
-provider = FietsrondesProvider()          # referentie bewaren, anders ruimt Python hem op
+provider = DeelgebiedenProvider()          # referentie bewaren, anders ruimt Python hem op
 QgsApplication.processingRegistry().addProvider(provider)
 
 
@@ -45,18 +45,18 @@ uit = tempfile.mkdtemp()
 
 # verkeerde grens moet direct een nette fout geven
 try:
-    processing.run("ekozafietsrondes:1_netwerk", {"GRENS": gebouwen, "WEGEN": wegen, "GEBOUWEN": gebouwen,
+    processing.run("smpdeelgebieden:1_netwerk", {"GRENS": gebouwen, "WEGEN": wegen, "GEBOUWEN": gebouwen,
                                                  "UITVOER": os.path.join(uit, "x.gpkg")})
     raise SystemExit("FOUT: gebouwenlaag als grens werd niet afgevangen")
 except Exception as e:
     print("OK  verkeerde grens afgevangen:", str(e).strip().splitlines()[-1][:100])
 
-processing.runAndLoadResults("ekozafietsrondes:1_netwerk", {
+processing.runAndLoadResults("smpdeelgebieden:1_netwerk", {
     "GRENS": grens, "WEGEN": wegen, "GEBOUWEN": gebouwen, "UITVOER": os.path.join(uit, "netwerk.gpkg")},
     feedback=Log())
 net = QgsVectorLayer(os.path.join(uit, "netwerk.gpkg") + "|layername=netwerk", "netwerk", "ogr")
 assert net.featureCount() > 1000
-processing.runAndLoadResults("ekozafietsrondes:2_indelen", {
+processing.runAndLoadResults("smpdeelgebieden:2_indelen", {
     "NETWERK": net, "GRENS": grens, "MAX_KM": 7, "UITVOER": os.path.join(uit, "indeling.gpkg")}, feedback=Log())
 
 geladen = {l.name(): l for l in QgsProject.instance().mapLayers().values()}

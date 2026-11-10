@@ -1,4 +1,4 @@
-# Brief: Ekoza fietsrondes
+# Brief: SMP deelgebieden (voorheen "Ekoza fietsrondes")
 
 *Stand van zaken 10 november 2026, v0.3.2. Overdracht van de verkenning in Claude (chat) naar dit repo.*
 
@@ -18,13 +18,13 @@ Collega's zijn enthousiast; dit repo maakt er een onderhouden teamtool van.
 
 ## 2. Wat er nu is
 
-Een **QGIS-plugin** (Processing Toolbox-groep "Ekoza fietsrondes") plus losse scripts, met een
+Een **QGIS-plugin** (Processing Toolbox-groep "SMP deelgebieden") plus losse scripts, met een
 rekenkern zonder QGIS-afhankelijkheid.
 
 | Onderdeel | Bestand | Wat |
 |---|---|---|
-| Rekenkern | `ekoza_fietsrondes/fietsronde_kern.py` | Alle logica; alleen shapely ≥ 2, numpy, networkx |
-| QGIS-laag | `ekoza_fietsrondes/algoritmes.py` | 3 Processing-algoritmes, I/O tussen QGIS en "records", opmaak |
+| Rekenkern | `smp_deelgebieden/fietsronde_kern.py` | Alle logica; alleen shapely ≥ 2, numpy, networkx |
+| QGIS-laag | `smp_deelgebieden/algoritmes.py` | 3 Processing-algoritmes, I/O tussen QGIS en "records", opmaak |
 | Plugin-skelet | `__init__.py`, `plugin.py`, `provider.py`, `metadata.txt` | Standaard QGIS-plugin, `hasProcessingProvider=yes` |
 | CLI | `scripts/stap1_netwerk.py`, `scripts/stap2_indelen.py` | Zelfde kern, I/O via geopandas |
 | Tests | `tests/test_kern.py` (pytest), `tests/qgis_rooktest.py` (PyQGIS) | Zie §7 |

@@ -3,16 +3,16 @@ from qgis.core import QgsProcessingProvider
 from .algoritmes import ControleerAlgoritme, NetwerkAlgoritme, IndelenAlgoritme
 
 
-class FietsrondesProvider(QgsProcessingProvider):
+class DeelgebiedenProvider(QgsProcessingProvider):
     def loadAlgorithms(self):
         for alg in (ControleerAlgoritme(), NetwerkAlgoritme(), IndelenAlgoritme()):
             self.addAlgorithm(alg)
 
     def id(self):
-        return "ekozafietsrondes"
+        return "smpdeelgebieden"
 
     def name(self):
-        return "Ekoza fietsrondes"
+        return "SMP deelgebieden"
 
     def longName(self):
-        return "Ekoza fietsrondes - projectgebied indelen in fietsrondes"
+        return "SMP deelgebieden - projectgebied indelen in fietsrondes"
