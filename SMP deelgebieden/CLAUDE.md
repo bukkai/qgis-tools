@@ -8,9 +8,8 @@ staan het doel, het algoritme, de besluiten, de bekende problemen en de backlog.
 - `smp_deelgebieden/`: de plugin (dit hele mapje gaat in de ZIP)
   - `fietsronde_kern.py`: alle rekenlogica. **Geen QGIS- of geopandas-imports**, alleen shapely ≥ 2, numpy, networkx.
   - `algoritmes.py`: Processing-algoritmes, I/O (QGIS ↔ records), opmaak. Geen rekenlogica hier.
-  - `installatie.py`: stap 0 (pip). Geen QGIS-imports, zodat pytest het kan testen.
 - `scripts/`: CLI-versies (geopandas voor I/O).
-- `tests/test_kern.py`, `tests/test_installatie.py`: pytest. `tests/qgis_rooktest.py`, `tests/qgis_downloadtest.py`: draaien de plugin in PyQGIS.
+- `tests/test_kern.py`: pytest. `tests/qgis_rooktest.py`, `tests/qgis_downloadtest.py`: draaien de plugin in PyQGIS.
 - Deze map staat in de repo `qgis-tools`; de CI-workflow staat in `../.github/workflows/smp-deelgebieden.yml`.
 - Licentie van de plugin: GPL-2.0-or-later (`smp_deelgebieden/LICENSE`); de rest van qgis-tools is MIT.
 - `testdata/`: OSM-uitsnede Westervoort (grens `gangstervoort`, lagen `highway`, `building`) + grenslijn.
@@ -41,7 +40,7 @@ python scripts/maak_zip.py      # dist/smp_deelgebieden-<versie>.zip om in QGIS 
 ```
 
 ## Valkuilen
-- De gebruiker draait QGIS 3.44 op **macOS**, collega's waarschijnlijk op Windows. Mogelijk is er geen shapely 2.1+ (dus geen `coverage_simplify` en geen `voronoi_polygons(ordered=...)`); dat moet stil terugvallen. CI test met shapely 2.0. Gebruik geen shapely-functies of -parameters van na 2.0 zonder terugval.
+- De plugin is voor collega's op **Windows** met QGIS 3.44 (shapely, numpy, networkx zitten erin; er is geen installatiestap). De gebruiker zelf draait QGIS 3.44 op **macOS**; daarvoor staat één pip-regel in de README. Mogelijk is er geen shapely 2.1+ (dus geen `coverage_simplify` en geen `voronoi_polygons(ordered=...)`); dat moet stil terugvallen. CI test met shapely 2.0. Gebruik geen shapely-functies of -parameters van na 2.0 zonder terugval.
 - Stap 1 en 2 controleren vóór het rekenen dat het uitvoerbestand geen invoer is en niet in het project geladen is (`controleer_uitvoer`); houd dat zo.
 - Bewaar in PyQGIS-tests een referentie naar de provider.
 - Schrijf geen `fid` mee naar GeoPackage-uitvoer.

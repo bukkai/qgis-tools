@@ -1,5 +1,5 @@
 """Processing-algoritmes van de SMP deelgebieden-toolbox."""
-import importlib, json, os, sys
+import importlib, json, os
 from urllib.parse import quote
 
 from qgis.PyQt.QtCore import QVariant, QUrl, QByteArray
@@ -16,8 +16,6 @@ from qgis.core import (
     QgsVectorLayerSimpleLabeling, QgsWkbTypes, QgsTextFormat, QgsTextBufferSettings,
 )
 
-from .installatie import NODIG, installeer, ontbrekend
-
 OVERPASS = ["https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
             "https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
@@ -33,12 +31,26 @@ _BEWAAR = []      # post-processors moeten blijven bestaan tot de lagen geladen 
 # ------------------------------------------------------------------------------------------
 # afhankelijkheden
 # ------------------------------------------------------------------------------------------
+def ontbrekend():
+    """Python-pakketten die de rekenkern nodig heeft maar die niet (of te oud) in QGIS zitten.
+    QGIS 3.44 voor Windows levert ze alle drie mee."""
+    mist = []
+    for mod in ("shapely", "numpy", "networkx"):
+        try:
+            m = importlib.import_module(mod)
+            if mod == "shapely" and int(m.__version__.split(".")[0]) < 2:
+                mist.append("shapely>=2")
+        except Exception:
+            mist.append(mod)
+    return mist
+
+
 def kern():
     mist = ontbrekend()
     if mist:
         raise QgsProcessingException(
-            "Deze Python-pakketten ontbreken in QGIS: " + ", ".join(mist) +
-            ". Draai eerst '0. Benodigdheden controleren' (met 'installeren' aangevinkt).")
+            "Deze Python-pakketten ontbreken in QGIS: " + ", ".join(mist) + ". Installeer QGIS 3.44 of nieuwer "
+            "(de standaardinstallatie voor Windows bevat ze), of zie de README voor macOS.")
     from . import fietsronde_kern
     return fietsronde_kern
 
@@ -264,57 +276,6 @@ class StijlPostProcessor(QgsProcessingLayerPostProcessorInterface):
     def postProcessLayer(self, layer, context, feedback):
         if isinstance(layer, QgsVectorLayer):
             stijl_laag(layer, self.soort)
-
-
-# ------------------------------------------------------------------------------------------
-# 0. Benodigdheden
-# ------------------------------------------------------------------------------------------
-class ControleerAlgoritme(QgsProcessingAlgorithm):
-    INSTALLEER = "INSTALLEER"
-
-    def name(self): return "0_benodigdheden"
-    def displayName(self): return "0. Benodigdheden controleren"
-    def createInstance(self): return ControleerAlgoritme()
-    def flags(self): return super().flags() | QgsProcessingAlgorithm.FlagNoThreading
-
-    def shortHelpString(self):
-        return ("Controleert of shapely (2.x), numpy en networkx beschikbaar zijn in de Python van QGIS. "
-                "Met 'installeren' aangevinkt worden ontbrekende pakketten met pip geïnstalleerd "
-                "(in je gebruikersmap, geen beheerdersrechten nodig). De numpy van QGIS wordt daarbij niet "
-                "bijgewerkt. Daarna QGIS opnieuw starten.\n\n"
-                "Lukt installeren niet:\n"
-                "• Windows: open de OSGeo4W Shell (startmenu, map QGIS) en typ\n"
-                "  python -m pip install --user networkx \"shapely>=2\"\n"
-                "• macOS: open Terminal en typ\n"
-                "  /Applications/QGIS.app/Contents/MacOS/bin/python3 -m pip install --user networkx \"shapely>=2\"\n"
-                "  (staat QGIS ergens anders, of heet de app anders, pas het pad dan aan).")
-
-    def initAlgorithm(self, config=None):
-        self.addParameter(QgsProcessingParameterBoolean(self.INSTALLEER, "Ontbrekende pakketten installeren", True))
-
-    def processAlgorithm(self, p, context, feedback):
-        mist = ontbrekend()
-        feedback.pushInfo(f"Python: {sys.version.split()[0]} ({sys.exec_prefix})")
-        for mod in NODIG:
-            try:
-                m = importlib.import_module(mod)
-                feedback.pushInfo(f"  {mod}: {getattr(m, '__version__', '?')}")
-            except Exception:
-                feedback.pushInfo(f"  {mod}: ONTBREEKT")
-        if not mist:
-            feedback.pushInfo("Alles aanwezig. Je kunt stap 1 en 2 gebruiken.")
-            return {}
-        if not self.parameterAsBoolean(p, self.INSTALLEER, context):
-            feedback.reportError("Ontbrekend: " + ", ".join(mist))
-            return {}
-        gelukt, regels = installeer(mist, log=feedback.pushInfo)
-        for regel in regels:
-            feedback.pushInfo(regel)
-        if not gelukt:
-            raise QgsProcessingException("Installeren is niet gelukt, zie de meldingen hierboven. Handmatig "
-                                         "installeren kan ook, zie de help van deze stap.")
-        feedback.pushInfo("Geïnstalleerd. Start QGIS opnieuw en draai deze stap nog eens ter controle.")
-        return {}
 
 
 # ------------------------------------------------------------------------------------------

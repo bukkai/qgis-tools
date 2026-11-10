@@ -24,17 +24,16 @@ rekenkern zonder QGIS-afhankelijkheid.
 
 | Onderdeel | Bestand | Wat |
 |---|---|---|
-| Rekenkern | `smp_deelgebieden/fietsronde_kern.py` | Alle logica; alleen shapely ≥ 2, numpy, networkx |
-| QGIS-laag | `smp_deelgebieden/algoritmes.py` | 3 Processing-algoritmes, I/O tussen QGIS en "records", opmaak |
-| Installatie | `smp_deelgebieden/installatie.py` | Stap 0: Python van QGIS vinden, `pip --user` met numpy vastgehouden (geen QGIS-imports) |
+| Rekenkern | `smp_deelgebieden/fietsronde_kern.py` | Alle logica; alleen shapely ≥ 2, numpy, networkx (zitten in QGIS 3.44 voor Windows) |
+| QGIS-laag | `smp_deelgebieden/algoritmes.py` | 2 Processing-algoritmes, I/O tussen QGIS en "records", opmaak |
 | Plugin-skelet | `__init__.py`, `plugin.py`, `provider.py`, `metadata.txt`, `LICENSE` | Standaard QGIS-plugin, `hasProcessingProvider=yes`, GPL-2.0-or-later |
 | CLI | `scripts/stap1_netwerk.py`, `scripts/stap2_indelen.py` | Zelfde kern, I/O via geopandas |
-| Tests | `tests/test_kern.py`, `tests/test_installatie.py` (pytest), `tests/qgis_rooktest.py`, `tests/qgis_downloadtest.py` (PyQGIS) | Zie §7 |
+| Tests | `tests/test_kern.py` (pytest), `tests/qgis_rooktest.py`, `tests/qgis_downloadtest.py` (PyQGIS) | Zie §7 |
 | CI | `.github/workflows/smp-deelgebieden.yml` (in de hoofdmap van qgis-tools) | Zie §7 |
 | Testdata | `testdata/westervoort_osm.gpkg` | Grens `gangstervoort`, OSM-lagen `highway` en `building` (© OpenStreetMap-bijdragers, ODbL) |
 
 ### Werkwijze voor de gebruiker
-0. **Benodigdheden controleren**: kijkt of shapely/numpy/networkx in de Python van QGIS zitten en installeert met `pip --user` wat ontbreekt.
+*(Stap 0 "Benodigdheden controleren" is in v0.4.0 geschrapt: de plugin is voor collega's op Windows, en QGIS 3.44 voor Windows bevat shapely, numpy en networkx al. Voor macOS staat één pip-regel in de README.)*
 1. **Netwerk maken**: grens + wegen (+ gebouwen) → laag `netwerk` met per stuk `status` (verplicht / optioneel / uit), `gewicht`, `reden`, `bebouwd`. De gebruiker kijkt dit na en past het aan in QGIS (status wijzigen, steegjes bijtekenen met snappen).
 2. **Deelgebieden en routes**: netwerk + grens (+ vaste grenslijnen) → `deelgebieden` (vlakken met km/ha), `route_lijn`, `start`, `route` (elk stuk met volgnummer en soort *tellen / herhaling / verbinding*), plus een GPX per ronde.
 
@@ -97,11 +96,10 @@ Bij 7,5 km waren het 13 gebieden en bij 8 km 12 (variant "alleen wegtype").
 
 ## 7. Testen en kwaliteit
 
-- `pytest -q`: 17 tests. De 2 trage (volledige indeling met en zonder grenslijn) duren samen 5–13 min, afhankelijk van de machine (Linux ±4,5 min; Windows met Python 3.14 11–13 min). Bevat de invarianten (dekking, maximum, gesloten routes, vlakken zonder overlap), een regressietest (Rivierweg-snippers), parsers (ook multipolygonen en onvolledige Overpass-antwoorden), de terugval voor shapely 2.0, de twee waarschuwingen op kleine kunstmatige netwerken, en stap 0 (`test_installatie.py`). Snel: `pytest -q -m "not traag"` (15 tests, < 10 s).
+- `pytest -q`: 12 tests. De 2 trage (volledige indeling met en zonder grenslijn) duren samen 5–13 min, afhankelijk van de machine (Linux ±4,5 min; Windows met Python 3.14 11–13 min). Bevat de invarianten (dekking, maximum, gesloten routes, vlakken zonder overlap), een regressietest (Rivierweg-snippers), parsers (ook multipolygonen en onvolledige Overpass-antwoorden), de terugval voor shapely 2.0, de twee waarschuwingen op kleine kunstmatige netwerken. Snel: `pytest -q -m "not traag"` (10 tests, < 10 s).
 - **CI** (GitHub Actions, `.github/workflows/smp-deelgebieden.yml` in qgis-tools): bij elke push de snelle set op Linux en Windows (Python 3.12) en een keer met shapely 2.0; elke nacht en met de hand de volledige set. Geplande runs draaien alleen vanaf de standaardbranch (`main`).
 - `tests/qgis_rooktest.py`: stap 1 + 2 via Processing, controle op laden, opmaak en GPX, en de afvang van een verkeerde grens, van uitvoer = invoer en van uitvoer die nog in het project geladen is. Getest met QGIS 3.34 (Ubuntu) en **QGIS 3.44.8 (Windows 11)**, ±5 min.
 - `tests/qgis_downloadtest.py`: stap 1 met download uit OSM. Op Windows gaf geen enkele Overpass-server bruikbare gegevens (502/504/foutpagina); de foutafhandeling werkte wel. **De download zelf is dus nog niet geslaagd getest.**
-- Stap 0 op Windows: de `python.exe` van QGIS draait pip; een droge run van de pip-opdracht slaagt. **macOS nog niet getest.**
 - De gebruiker draait **QGIS 3.44 op macOS** (Python 3.12, GEOS 3.14). Daar hebben stap 1 en 2 met de juiste lagen nog niet volledig gedraaid (zie §8).
 
 ## 8. Bekende problemen en lessen
@@ -116,13 +114,12 @@ Bij 7,5 km waren het 13 gebieden en bij 8 km 12 (variant "alleen wegtype").
 - **Vastknopen van bijgetekende lijnen** (`bereid_netwerk`) is onbetrouwbaar: eindpunten worden alleen vastgeknoopt als er ergens een lijn doorgeknipt is, en dan wisselen de punten soms van plek in plaats van samen te vallen. Besloten: niet het algoritme aanpassen, maar waarschuwen (zie §4). Met snappen aan in QGIS speelt het niet.
 - **Overpass**: een antwoord met een `remark` over een timeout of te weinig geheugen bevat soms al een deel van de gegevens. Dat werd stil geaccepteerd (onvolledig netwerk); nu gaat de download dan door naar de volgende server. De netwerk-timeout van QGIS (standaard 60 s) wordt tijdens de download tijdelijk verhoogd. Gebouwen als multipolygoon (flats met binnenplaats) ontbraken; die worden nu ook opgehaald.
 - **Uitvoerbestand**: stap 1 en 2 wisten het uitvoerbestand vóór het schrijven. Op Windows mislukt dat als er lagen uit dat bestand in het project staan. Koos je het netwerk als uitvoer van stap 2, dan was je het nagekeken netwerk kwijt. Nu wordt vóór het rekenen gecontroleerd en volgt een duidelijke melding.
-- **QGIS 3.44.8 voor Windows** (standalone-installatie) levert shapely 2.1.2, numpy 2.4.2 en networkx 3.6.1 al mee; stap 0 is daar niet nodig. De `python.exe` van QGIS kan pip ook buiten de OSGeo4W-omgeving draaien.
-- `pip install --user` zonder beperkingen kan een nieuwere numpy in de gebruikersmap zetten die de numpy van QGIS overschaduwt; stap 0 houdt numpy nu vast op de huidige versie.
+- **QGIS 3.44.8 voor Windows** (standalone-installatie) levert shapely 2.1.2, numpy 2.4.2 en networkx 3.6.1 al mee. Daarom is stap 0 (installeren met `pip --user`) geschrapt: minder code, en geen risico dat pip een nieuwere numpy in de gebruikersmap zet die QGIS breekt.
 
 ## 9. Backlog (voorstel, nog te prioriteren met het team)
 
 **Robuustheid en installatie**
-1. Stap 0 (`pip --user`) controleren op macOS (QGIS.app) en Windows (OSGeo4W/standalone). *v0.4.0: veiliger gemaakt en op Windows (QGIS 3.44.8) getest; **macOS nog testen**.*
+1. ~~Stap 0 (`pip --user`) controleren op macOS en Windows.~~ *Vervallen in v0.4.0: stap 0 is geschrapt (zie §2).*
 2. Overpass-download in de echte QGIS testen (timeouts, grote gebieden, foutmeldingen). *v0.4.0: onvolledige antwoorden, timeout en multipolygonen aangepakt; `tests/qgis_downloadtest.py`.*
 3. "Execution failed" bij tijdelijke uitvoer op macOS uitzoeken; eventueel standaard naast het QGIS-project opslaan. *Voorlopig geparkeerd; zie §8.*
 4. CI (GitHub Actions). *Gedaan in v0.4.0: snelle set op Linux en Windows plus met shapely 2.0 bij elke push, de volledige set elke nacht. Nog open: een QGIS-docker voor de rooktest.*

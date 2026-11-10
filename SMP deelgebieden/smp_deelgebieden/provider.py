@@ -1,11 +1,11 @@
 from qgis.core import QgsProcessingProvider
 
-from .algoritmes import ControleerAlgoritme, NetwerkAlgoritme, IndelenAlgoritme
+from .algoritmes import NetwerkAlgoritme, IndelenAlgoritme
 
 
 class DeelgebiedenProvider(QgsProcessingProvider):
     def loadAlgorithms(self):
-        for alg in (ControleerAlgoritme(), NetwerkAlgoritme(), IndelenAlgoritme()):
+        for alg in (NetwerkAlgoritme(), IndelenAlgoritme()):
             self.addAlgorithm(alg)
 
     def id(self):
