@@ -66,4 +66,26 @@ assert type(geladen["deelgebieden"].renderer()).__name__ == "QgsCategorizedSymbo
 assert geladen["deelgebieden"].labelsEnabled()
 gpx = [f for f in os.listdir(uit) if f.endswith(".gpx")]
 assert gpx, "geen GPX geschreven"
+
+
+def moet_falen(alg, params, verwacht, wat):
+    try:
+        processing.run(alg, params)
+    except Exception as e:
+        tekst = str(e)
+        assert verwacht in tekst, f"{wat}: verkeerde fout: {tekst[-300:]}"
+        print(f"OK  {wat} afgevangen")
+        return
+    raise SystemExit(f"FOUT: {wat} werd niet afgevangen")
+
+
+# stap 2 mag het netwerk (de invoer) niet overschrijven
+moet_falen("smpdeelgebieden:2_indelen", {"NETWERK": net, "GRENS": grens, "MAX_KM": 7,
+                                         "UITVOER": os.path.join(uit, "netwerk.gpkg")},
+           "hetzelfde bestand als de invoer", "uitvoer = invoer")
+assert QgsVectorLayer(os.path.join(uit, "netwerk.gpkg") + "|layername=netwerk", "n", "ogr").featureCount() > 1000
+# stap 1 opnieuw terwijl de netwerklaag uit de vorige keer nog in het project staat
+moet_falen("smpdeelgebieden:1_netwerk", {"GRENS": grens, "WEGEN": wegen, "GEBOUWEN": gebouwen,
+                                         "UITVOER": os.path.join(uit, "netwerk.gpkg")},
+           "staan nog in het project", "uitvoer nog geladen")
 print(f"OK  rooktest geslaagd: {geladen['deelgebieden'].featureCount()} gebieden, {len(gpx)} GPX-bestanden ({uit})")

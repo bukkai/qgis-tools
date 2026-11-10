@@ -155,6 +155,41 @@ def laad_na_afloop(context, pad, laagnaam, weergavenaam, stijl=None):
     context.addLayerToLoadOnCompletion(vl.id(), details)
 
 
+def _bestand(pad):
+    return os.path.normcase(os.path.abspath(pad.split("|")[0])) if pad else ""
+
+
+def controleer_uitvoer(alg, p, context, pad, invoer):
+    """Vóór het rekenen: het uitvoerbestand mag geen invoer overschrijven en niet in gebruik zijn."""
+    doel = _bestand(pad)
+    for naam, tekst in invoer:
+        laag = alg.parameterAsVectorLayer(p, naam, context)
+        if laag is not None and _bestand(laag.source()) == doel:
+            raise QgsProcessingException(
+                f"Het uitvoerbestand is hetzelfde bestand als de invoer bij '{tekst}' ({pad}). Het wordt bij het "
+                "opslaan helemaal vervangen, dus dan raak je die invoer kwijt. Kies een andere bestandsnaam.")
+    project = context.project()
+    if project is not None and os.path.exists(pad):
+        geladen = sorted({l.name() for l in project.mapLayers().values()
+                          if hasattr(l, "source") and _bestand(l.source()) == doel})
+        if geladen:
+            raise QgsProcessingException(
+                f"Het uitvoerbestand {pad} wordt vervangen, maar lagen daaruit staan nog in het project "
+                f"({', '.join(geladen)}). Verwijder die lagen eerst uit het project, of kies een andere bestandsnaam.")
+
+
+def maak_vrij(pad):
+    """Bestaand uitvoerbestand weghalen; nette fout als dat niet kan (op Windows: bestand in gebruik)."""
+    if not os.path.exists(pad):
+        return
+    try:
+        os.remove(pad)
+    except OSError as e:
+        raise QgsProcessingException(
+            f"Kan {pad} niet vervangen: het bestand is in gebruik ({e.strerror}). Haal lagen uit dit bestand uit "
+            "het project of sluit het in andere programma's, en probeer het opnieuw, of kies een andere bestandsnaam.")
+
+
 def controleer_grens(alg, p, context, recs, naam="GRENS", andere=("GEBOUWEN", "WEGEN", "NETWERK", "GRENSLIJNEN")):
     """Vang een verkeerd gekozen grenslaag af (bv. de gebouwenlaag) voordat het rekenen begint."""
     gekozen = p.get(naam)
@@ -351,6 +386,8 @@ class NetwerkAlgoritme(QgsProcessingAlgorithm):
         grens_bron = self.parameterAsSource(p, self.GRENS, context)
         wegen_bron = self.parameterAsSource(p, self.WEGEN, context)
         pad = self.parameterAsFileOutput(p, self.UITVOER, context)
+        controleer_uitvoer(self, p, context, pad, ((self.GRENS, "Projectgrens"), (self.WEGEN, "Wegen"),
+                                                   (self.GEBOUWEN, "Gebouwen")))
         marge = self.parameterAsDouble(p, self.MARGE, context)
         crs = grens_bron.sourceCrs()
         if not crs.isValid() or crs.isGeographic():
@@ -383,8 +420,7 @@ class NetwerkAlgoritme(QgsProcessingAlgorithm):
                              parallel=self.parameterAsDouble(p, self.PARALLEL, context),
                              kort=self.parameterAsDouble(p, self.KORT, context))
         feedback.setProgress(90)
-        if os.path.exists(pad):
-            os.remove(pad)
+        maak_vrij(pad)
         records_naar_gpkg(net, crs, pad, "netwerk", "LineString", context)
         records_naar_gpkg([dict(geometry=grens)], crs, pad, "grens", "MultiPolygon", context)
         laad_na_afloop(context, pad, "netwerk", "netwerk", "netwerk")
@@ -517,6 +553,9 @@ class IndelenAlgoritme(QgsProcessingAlgorithm):
         context.setInvalidGeometryCheck(QgsFeatureRequest.GeometryNoCheck)
         k = kern()
         import shapely
+        pad = self.parameterAsFileOutput(p, self.UITVOER, context)
+        controleer_uitvoer(self, p, context, pad, ((self.NETWERK, "Netwerk"), (self.GRENS, "Projectgrens"),
+                                                   (self.GRENSLIJNEN, "Vaste grenzen")))
         net_bron = self.parameterAsSource(p, self.NETWERK, context)
         crs = net_bron.sourceCrs()
         if not crs.isValid() or crs.isGeographic():
@@ -543,9 +582,7 @@ class IndelenAlgoritme(QgsProcessingAlgorithm):
         except ValueError as e:
             raise QgsProcessingException(str(e))
 
-        pad = self.parameterAsFileOutput(p, self.UITVOER, context)
-        if os.path.exists(pad):
-            os.remove(pad)
+        maak_vrij(pad)
         for laag, typ in (("deelgebieden", "MultiPolygon"), ("route_lijn", "LineString"), ("start", "Point"),
                           ("route", "LineString"), ("netwerk", "LineString")):
             records_naar_gpkg(uit[laag], crs, pad, laag, typ, context)
