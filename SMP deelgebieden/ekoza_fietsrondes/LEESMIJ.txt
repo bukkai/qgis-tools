@@ -1,0 +1,32 @@
+Ekoza fietsrondes - QGIS-plugin
+==============================
+
+Installeren
+  QGIS > Plugins > Beheren en installeren > Installeren vanaf ZIP > ekoza_fietsrondes.zip
+  (bij "experimentele plugins" eventueel aanvinken onder Instellingen).
+  De toolbox staat daarna in de Processing Toolbox onder "Ekoza fietsrondes".
+
+  Eenmalig: draai "0. Benodigdheden controleren" (installeert networkx/shapely als die ontbreken)
+  en start QGIS daarna opnieuw.
+
+Werkwijze
+  1. Netwerk maken       projectgrens kiezen; wegenlaag leeg = automatisch uit OpenStreetMap.
+                         Verplicht = langs bebouwing (gebouwen binnen 25 m; BAG-panden of OSM,
+                         leeg = automatisch uit OSM). Paden langs huizen worden verplicht, tenzij
+                         ze naast een getelde straat lopen. Of kies "Alleen wegtype".
+                         Kijk de laag 'netwerk' na: kolom status (verplicht/optioneel/uit),
+                         gewicht (hoger = liever vermijden), reden (waarom deze status).
+                         Steegje bijtekenen: snappen aan, status en gewicht invullen.
+                         Wijzigingen opslaan!
+  2. Deelgebieden en     netwerk + grens kiezen, max. km per ronde (en eventueel max. ha).
+     routes              Gladheid (standaard 150 m) trekt vingers/uitstulpingen recht.
+                         Vaste grenzen: zelf getekende lijnen (hoofdweg, spoor, water) waar
+                         gebieden niet overheen gaan; laat ze de projectgrens kruisen.
+                         Laadt deelgebieden, route_lijn en start; GPX per ronde naast de GeoPackage.
+                         In de GeoPackage ook laag 'route': elk stuk met volgnummer en soort
+                         (tellen / herhaling / verbinding).
+
+Welk wegtype standaard verplicht/optioneel/uit is: tabel TYPES bovenin fietsronde_kern.py;
+welke gebouwen niet meetellen (schuurtjes, garages...): GEEN_GEBOUW.
+
+Zonder QGIS (opdrachtregel): zie scripts/ in de repository (nodig: geopandas, networkx).

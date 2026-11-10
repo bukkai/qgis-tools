@@ -1,0 +1,9 @@
+# Rekenkern (ook nodig in de Python van QGIS)
+shapely>=2.0
+numpy
+networkx>=3.0
+# Alleen voor de losse scripts en de tests
+geopandas>=1.0
+pyogrio
+pytest
+matplotlib

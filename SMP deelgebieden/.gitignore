@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+*.gpx
+.DS_Store
+.venv/
+# QGIS
+*.qgs~
+*.qgz~
+*.gpkg-wal
+*.gpkg-shm
