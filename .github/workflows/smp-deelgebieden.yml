@@ -1,0 +1,78 @@
+# Tests van de plugin "SMP deelgebieden" (rekenkern, zonder QGIS).
+#  - bij elke push die iets in de pluginmap (of in deze workflow) verandert: de snelle set,
+#    op Linux en Windows (collega's werken op Windows), plus één keer met de oudste shapely (2.0)
+#  - elke nacht en met de hand ("Run workflow"): de volledige set, ook de trage indelingstests
+#    (let op: GitHub draait geplande workflows alleen vanaf de standaardbranch)
+name: SMP deelgebieden - tests
+
+on:
+  push:
+    paths:
+      - "SMP deelgebieden/**"
+      - ".github/workflows/smp-deelgebieden.yml"
+  schedule:
+    - cron: "17 2 * * *"      # 02:17 UTC
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: "SMP deelgebieden"
+
+jobs:
+  snel:
+    name: snel (${{ matrix.os }})
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"   # zelfde als de Python in QGIS 3.34/3.44
+          cache: pip
+          cache-dependency-path: "SMP deelgebieden/requirements-dev.txt"
+      - name: Afhankelijkheden installeren
+        run: python -m pip install -r requirements-dev.txt
+      - name: Tests
+        run: python -m pytest -q -m "not traag"
+
+  oude-shapely:
+    name: snel (shapely 2.0, zonder coverage_simplify)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: "SMP deelgebieden/requirements-dev.txt"
+      - name: Afhankelijkheden installeren
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pip install "shapely==2.0.*"
+          python -c "import shapely; print('shapely', shapely.__version__); assert not hasattr(shapely, 'coverage_simplify')"
+      - name: Tests
+        run: python -m pytest -q -m "not traag"
+
+  volledig:
+    name: volledig (met trage tests)
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: "SMP deelgebieden/requirements-dev.txt"
+      - name: Afhankelijkheden installeren
+        run: python -m pip install -r requirements-dev.txt
+      - name: Tests
+        run: python -m pytest -q --durations=5

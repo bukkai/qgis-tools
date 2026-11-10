@@ -1,0 +1,27 @@
+[general]
+name=SMP deelgebieden
+qgisMinimumVersion=3.22
+description=Deelt een projectgebied op in fietsrondes van maximaal X km en berekent per ronde de kortste route langs alle straten.
+about=Voor SMP-inventarisaties per fiets. Stap 1 maakt van OSM-wegen een netwerk (verplicht / optioneel / uit, met samengevoegde rotondes en dubbele rijbanen), dat je in QGIS kunt nakijken. Stap 2 deelt het gebied in en berekent per deelgebied de kortste ronde (Chinese/Rural Postman) met volgorde, GPX en kaartlagen. Nodig: QGIS 3.44 of nieuwer (shapely, numpy en networkx zitten in de Windows-installatie).
+version=0.4.0
+author=Ekoza
+homepage=https://github.com/bukkai/qgis-tools/tree/main/SMP%20deelgebieden
+repository=https://github.com/bukkai/qgis-tools
+tracker=https://github.com/bukkai/qgis-tools/issues
+category=Analysis
+tags=routing,network,survey,ecology,bicycle,osm
+experimental=True
+hasProcessingProvider=yes
+changelog=
+    0.4.0 (10-11-2026)
+    - Nieuwe naam: SMP deelgebieden (voorheen Ekoza fietsrondes); verwijder de oude plugin.
+    - Werkt ook met shapely 2.0 (stap 2 liep daar vast bij het maken van de vlakken).
+    - Waarschuwing bij lijnen die vlak naast een andere lijn eindigen maar niet verbonden zijn,
+      en bij een ronde die langer wordt dan het maximum.
+    - OSM-download: onvolledige antwoorden worden niet meer geaccepteerd, langere timeout,
+      ook gebouwen als multipolygoon, duidelijkere meldingen per server.
+    - Uitvoer: overschrijft nooit de invoer; duidelijke melding als het bestand nog in gebruik is.
+    - Stap 0 (benodigdheden installeren) vervalt: QGIS 3.44 voor Windows bevat alles al.
+    - Licentie GPL-2.0-or-later.
+    0.3.2 (10-11-2026)
+    - Laatste versie uit de verkenning.
