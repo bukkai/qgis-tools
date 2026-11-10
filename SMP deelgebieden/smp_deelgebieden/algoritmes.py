@@ -1,5 +1,5 @@
 """Processing-algoritmes van de SMP deelgebieden-toolbox."""
-import importlib, json, os, shutil, subprocess, sys
+import importlib, json, os, sys
 from urllib.parse import quote
 
 from qgis.PyQt.QtCore import QVariant, QUrl, QByteArray
@@ -16,7 +16,8 @@ from qgis.core import (
     QgsVectorLayerSimpleLabeling, QgsWkbTypes, QgsTextFormat, QgsTextBufferSettings,
 )
 
-NODIG = {"shapely": "shapely", "numpy": "numpy", "networkx": "networkx"}
+from .installatie import NODIG, installeer, ontbrekend
+
 OVERPASS = ["https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
             "https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
@@ -32,18 +33,6 @@ _BEWAAR = []      # post-processors moeten blijven bestaan tot de lagen geladen 
 # ------------------------------------------------------------------------------------------
 # afhankelijkheden
 # ------------------------------------------------------------------------------------------
-def ontbrekend():
-    mist = []
-    for mod, pakket in NODIG.items():
-        try:
-            m = importlib.import_module(mod)
-            if mod == "shapely" and int(m.__version__.split(".")[0]) < 2:
-                mist.append("shapely>=2")
-        except Exception:
-            mist.append(pakket)
-    return mist
-
-
 def kern():
     mist = ontbrekend()
     if mist:
@@ -52,17 +41,6 @@ def kern():
             ". Draai eerst '0. Benodigdheden controleren' (met 'installeren' aangevinkt).")
     from . import fietsronde_kern
     return fietsronde_kern
-
-
-def python_exe():
-    kandidaten = [os.path.join(sys.exec_prefix, "python.exe"), os.path.join(sys.exec_prefix, "python3.exe"),
-                  os.path.join(sys.exec_prefix, "bin", "python3"), os.path.join(sys.exec_prefix, "bin", "python")]
-    if os.path.basename(sys.executable).lower().startswith("python"):
-        kandidaten.insert(0, sys.executable)
-    for k in kandidaten:
-        if os.path.isfile(k):
-            return k
-    return shutil.which("python3") or shutil.which("python")
 
 
 # ------------------------------------------------------------------------------------------
@@ -267,9 +245,14 @@ class ControleerAlgoritme(QgsProcessingAlgorithm):
     def shortHelpString(self):
         return ("Controleert of shapely (2.x), numpy en networkx beschikbaar zijn in de Python van QGIS. "
                 "Met 'installeren' aangevinkt worden ontbrekende pakketten met pip geïnstalleerd "
-                "(in je gebruikersmap, geen beheerdersrechten nodig). Daarna QGIS opnieuw starten.\n\n"
-                "Lukt installeren niet, open dan de OSGeo4W Shell (Windows) en typ:\n"
-                "python -m pip install --user networkx shapely")
+                "(in je gebruikersmap, geen beheerdersrechten nodig). De numpy van QGIS wordt daarbij niet "
+                "bijgewerkt. Daarna QGIS opnieuw starten.\n\n"
+                "Lukt installeren niet:\n"
+                "• Windows: open de OSGeo4W Shell (startmenu, map QGIS) en typ\n"
+                "  python -m pip install --user networkx \"shapely>=2\"\n"
+                "• macOS: open Terminal en typ\n"
+                "  /Applications/QGIS.app/Contents/MacOS/bin/python3 -m pip install --user networkx \"shapely>=2\"\n"
+                "  (staat QGIS ergens anders, of heet de app anders, pas het pad dan aan).")
 
     def initAlgorithm(self, config=None):
         self.addParameter(QgsProcessingParameterBoolean(self.INSTALLEER, "Ontbrekende pakketten installeren", True))
@@ -289,16 +272,12 @@ class ControleerAlgoritme(QgsProcessingAlgorithm):
         if not self.parameterAsBoolean(p, self.INSTALLEER, context):
             feedback.reportError("Ontbrekend: " + ", ".join(mist))
             return {}
-        exe = python_exe()
-        if not exe:
-            raise QgsProcessingException("Kan de Python van QGIS niet vinden. Installeer handmatig, zie de help.")
-        cmd = [exe, "-m", "pip", "install", "--user"] + mist
-        feedback.pushInfo("Uitvoeren: " + " ".join(cmd))
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        for regel in (res.stdout + res.stderr).splitlines()[-25:]:
+        gelukt, regels = installeer(mist, log=feedback.pushInfo)
+        for regel in regels:
             feedback.pushInfo(regel)
-        if res.returncode != 0:
-            raise QgsProcessingException("pip install mislukt, zie de meldingen hierboven en de help.")
+        if not gelukt:
+            raise QgsProcessingException("Installeren is niet gelukt, zie de meldingen hierboven. Handmatig "
+                                         "installeren kan ook, zie de help van deze stap.")
         feedback.pushInfo("Geïnstalleerd. Start QGIS opnieuw en draai deze stap nog eens ter controle.")
         return {}
 
