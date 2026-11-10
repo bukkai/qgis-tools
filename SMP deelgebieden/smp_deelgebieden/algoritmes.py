@@ -458,11 +458,13 @@ class NetwerkAlgoritme(QgsProcessingAlgorithm):
                     feedback.pushInfo(f"  mislukt: {reden}")
                     fouten.append(f"{host}: {reden}")
                     continue
+                inhoud = bytes(br.reply().content()).decode("utf-8", errors="replace")
                 try:
-                    data = json.loads(bytes(br.reply().content()).decode("utf-8"))
-                except Exception as e:
-                    feedback.pushInfo(f"  onleesbaar antwoord: {e}")
-                    fouten.append(f"{host}: onleesbaar antwoord")
+                    data = json.loads(inhoud)
+                except Exception:
+                    begin = " ".join(inhoud.split())[:120]
+                    feedback.pushInfo(f"  geen bruikbaar antwoord (geen JSON, waarschijnlijk een foutpagina): {begin}")
+                    fouten.append(f"{host}: geen bruikbaar antwoord")
                     data = None
                     continue
                 probleem = k.overpass_fout(data)
