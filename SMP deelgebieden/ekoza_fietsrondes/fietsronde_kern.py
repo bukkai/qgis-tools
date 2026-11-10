@@ -94,24 +94,65 @@ def lees_overpass(data):
     return uit
 
 
+OVERPASS_TIMEOUT = 180     # s, zoveel tijd mag de server nemen
+
+
 def overpass_query(zuid, west, noord, oost, sleutel="highway"):
-    return (f'[out:json][timeout:180];way["{sleutel}"]({zuid:.6f},{west:.6f},{noord:.6f},{oost:.6f});'
-            f'out tags geom;')
+    bb = f"({zuid:.6f},{west:.6f},{noord:.6f},{oost:.6f})"
+    if sleutel == "building":       # ook gebouwen die als multipolygoon getekend zijn (flats met binnenplaats)
+        return (f'[out:json][timeout:{OVERPASS_TIMEOUT}];(way["building"]{bb};'
+                f'relation["building"]["type"="multipolygon"]{bb};);out tags geom;')
+    return f'[out:json][timeout:{OVERPASS_TIMEOUT}];way["{sleutel}"]{bb};out tags geom;'
+
+
+def overpass_fout(data):
+    """Foutmelding als het Overpass-antwoord onbruikbaar of onvolledig is, anders None.
+    Bij een timeout of geheugenfout stuurt Overpass wel een deel van de gegevens, met een 'remark'."""
+    opm = str(data.get("remark") or "")
+    if "error" in opm.lower() or "timed out" in opm.lower():
+        return f"onvolledig antwoord ({opm.strip()[:150]})"
+    if not data.get("elements") and opm:
+        return opm.strip()[:150]
+    return None
+
+
+def _ringen(lijnen):
+    """Losse lijnstukken (ways van een relatie) -> polygonen."""
+    lijnen = [LineString(cs) for cs in lijnen if len(cs) >= 2]
+    if not lijnen:
+        return []
+    return list(shapely.ops.polygonize(shapely.union_all(lijnen)))
 
 
 def lees_overpass_vlakken(data):
-    """Overpass-JSON -> records met tags en Polygon in lon/lat (alleen gesloten ways)."""
+    """Overpass-JSON -> records met tags en (Multi)Polygon in lon/lat: gesloten ways en multipolygoon-relaties."""
     from shapely.geometry import Polygon
     uit = []
     for el in data.get("elements", []):
-        if el.get("type") != "way" or "geometry" not in el:
-            continue
-        cs = [(p["lon"], p["lat"]) for p in el["geometry"] if p]
-        if len(cs) < 4 or cs[0] != cs[-1]:
-            continue
         r = dict(el.get("tags", {}))
         r["osm_id"] = el.get("id")
-        r["geometry"] = Polygon(cs)
+        if el.get("type") == "way" and "geometry" in el:
+            cs = [(p["lon"], p["lat"]) for p in el["geometry"] if p]
+            if len(cs) < 4 or cs[0] != cs[-1]:
+                continue
+            r["geometry"] = Polygon(cs)
+        elif el.get("type") == "relation":
+            rol = defaultdict(list)
+            for m in el.get("members", []):
+                if m.get("type") == "way" and m.get("geometry"):
+                    rol[m.get("role") or "outer"].append([(p["lon"], p["lat"]) for p in m["geometry"] if p])
+            buiten = _ringen(rol["outer"])
+            if not buiten:
+                continue
+            g = shapely.union_all(buiten)
+            binnen = _ringen(rol["inner"])
+            if binnen:
+                g = g.difference(shapely.union_all(binnen))
+            if g.is_empty:
+                continue
+            r["geometry"] = g
+        else:
+            continue
         uit.append(r)
     return uit
 

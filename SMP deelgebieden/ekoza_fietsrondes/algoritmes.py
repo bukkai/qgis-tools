@@ -6,7 +6,7 @@ from qgis.PyQt.QtCore import QVariant, QUrl, QByteArray
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import (
-    QgsBlockingNetworkRequest, QgsCategorizedSymbolRenderer, QgsFeatureRequest, QgsCoordinateReferenceSystem,
+    QgsBlockingNetworkRequest, QgsNetworkAccessManager, QgsCategorizedSymbolRenderer, QgsFeatureRequest, QgsCoordinateReferenceSystem,
     QgsCoordinateTransform, QgsFeature, QgsField, QgsGeometry, QgsPalLayerSettings,
     QgsProcessing, QgsProcessingAlgorithm, QgsProcessingContext, QgsProcessingException,
     QgsProcessingLayerPostProcessorInterface, QgsProcessingParameterBoolean,
@@ -20,6 +20,9 @@ NODIG = {"shapely": "shapely", "numpy": "numpy", "networkx": "networkx"}
 OVERPASS = ["https://overpass-api.de/api/interpreter",
             "https://overpass.kumi.systems/api/interpreter",
             "https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
+HTTP_REDEN = {400: "query niet geaccepteerd (400)", 406: "verzoek geweigerd (406)",
+              429: "server is te druk, te veel verzoeken (429)", 502: "server tijdelijk onbereikbaar (502)",
+              503: "server tijdelijk onbereikbaar (503)", 504: "server reageerde niet op tijd (504)"}
 KLEUREN = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
            "#bcbd22", "#17becf", "#aec7e8", "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5", "#c49c94",
            "#f7b6d2", "#dbdb8d", "#9edae5", "#393b79"]
@@ -419,34 +422,54 @@ class NetwerkAlgoritme(QgsProcessingAlgorithm):
         bb = g.boundingBox()
         query = k.overpass_query(bb.yMinimum(), bb.xMinimum(), bb.yMaximum(), bb.xMaximum(), sleutel)
         wat = "wegen" if sleutel == "highway" else "gebouwen"
-        data = None
-        for server in OVERPASS:
-            if feedback.isCanceled():
-                return []
-            feedback.pushInfo(f"{wat.capitalize()} downloaden van {server} ...")
-            req = QNetworkRequest(QUrl(server))
-            req.setHeader(QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
-            br = QgsBlockingNetworkRequest()
-            fout = br.post(req, QByteArray(("data=" + quote(query)).encode()), feedback=feedback)
-            if fout != QgsBlockingNetworkRequest.NoError:
-                feedback.pushInfo(f"  mislukt: {br.errorMessage()}")
-                continue
-            try:
-                data = json.loads(bytes(br.reply().content()).decode("utf-8"))
-            except Exception as e:
-                feedback.pushInfo(f"  onleesbaar antwoord: {e}")
-                continue
-            if not data.get("elements") and data.get("remark"):
-                feedback.pushInfo(f"  server meldt: {data['remark']}")
-                data = None
-                continue
-            break
+        data, fouten = None, []
+        # De standaard netwerk-timeout van QGIS (60 s) is korter dan de tijd die we de server geven;
+        # tijdelijk verhogen en daarna altijd terugzetten.
+        oud = QgsNetworkAccessManager.timeout()
+        QgsNetworkAccessManager.setTimeout(max(oud, (k.OVERPASS_TIMEOUT + 30) * 1000))
+        try:
+            for server in OVERPASS:
+                if feedback.isCanceled():
+                    return []
+                host = QUrl(server).host()
+                feedback.pushInfo(f"{wat.capitalize()} downloaden van {host} ...")
+                req = QNetworkRequest(QUrl(server))
+                req.setHeader(QNetworkRequest.ContentTypeHeader, "application/x-www-form-urlencoded")
+                br = QgsBlockingNetworkRequest()
+                fout = br.post(req, QByteArray(("data=" + quote(query)).encode()), feedback=feedback)
+                if fout != QgsBlockingNetworkRequest.NoError:
+                    status = br.reply().attribute(QNetworkRequest.HttpStatusCodeAttribute)
+                    reden = HTTP_REDEN.get(status, br.errorMessage())
+                    feedback.pushInfo(f"  mislukt: {reden}")
+                    fouten.append(f"{host}: {reden}")
+                    continue
+                try:
+                    data = json.loads(bytes(br.reply().content()).decode("utf-8"))
+                except Exception as e:
+                    feedback.pushInfo(f"  onleesbaar antwoord: {e}")
+                    fouten.append(f"{host}: onleesbaar antwoord")
+                    data = None
+                    continue
+                probleem = k.overpass_fout(data)
+                if probleem:
+                    feedback.pushInfo(f"  server meldt: {probleem}")
+                    fouten.append(f"{host}: {probleem}")
+                    data = None
+                    continue
+                break
+        finally:
+            QgsNetworkAccessManager.setTimeout(oud)
         if not data:
             raise QgsProcessingException(
-                f"Downloaden van {wat} uit OpenStreetMap is bij alle servers mislukt. Probeer het later "
-                f"opnieuw, of haal ze op met QuickOSM (key '{sleutel}') en geef die laag op.")
+                f"Downloaden van {wat} uit OpenStreetMap is bij alle servers mislukt ({'; '.join(fouten)}). "
+                f"Probeer het later opnieuw, of haal ze op met de plugin QuickOSM (key '{sleutel}', value leeg) "
+                f"en geef die laag op bij '{wat}'.")
         import shapely
         recs = k.lees_overpass(data) if sleutel == "highway" else k.lees_overpass_vlakken(data)
+        if not recs:
+            raise QgsProcessingException(
+                f"Er zijn geen {wat} gevonden in OpenStreetMap binnen de projectgrens. Klopt de grens "
+                "(ligt hij op de goede plek op de kaart)?")
         for r in recs:
             q = QgsGeometry.fromWkt(r["geometry"].wkt)
             q.transform(terug)

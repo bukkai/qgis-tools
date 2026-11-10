@@ -74,6 +74,29 @@ def test_lees_overpass():
     assert kern.lees_overpass_vlakken(data)[0]["geometry"].geom_type == "Polygon"
 
 
+def test_lees_overpass_multipolygoon():
+    """Flat met binnenplaats: buitenrand uit twee ways, binnenring als gat."""
+    def punten(*cs):
+        return [{"lon": x, "lat": y} for x, y in cs]
+    data = {"elements": [{"type": "relation", "id": 9, "tags": {"building": "apartments", "type": "multipolygon"},
+                          "members": [
+                              {"type": "way", "role": "outer", "geometry": punten((0, 0), (10, 0), (10, 10))},
+                              {"type": "way", "role": "outer", "geometry": punten((10, 10), (0, 10), (0, 0))},
+                              {"type": "way", "role": "inner", "geometry": punten((4, 4), (6, 4), (6, 6), (4, 6), (4, 4))}]}]}
+    r = kern.lees_overpass_vlakken(data)
+    assert len(r) == 1 and r[0]["building"] == "apartments"
+    assert r[0]["geometry"].area == pytest.approx(100 - 4)
+    assert "relation" in kern.overpass_query(51, 5, 52, 6, "building")
+    assert "relation" not in kern.overpass_query(51, 5, 52, 6, "highway")
+
+
+def test_overpass_fout():
+    assert kern.overpass_fout({"elements": [{"type": "way"}]}) is None
+    assert kern.overpass_fout({"elements": [], "remark": "runtime error: Query timed out in \"query\""})
+    # gedeeltelijk antwoord na een timeout: niet stil accepteren
+    assert kern.overpass_fout({"elements": [{"type": "way"}], "remark": "runtime error: Query run out of memory"})
+
+
 def test_voronoi_zonder_ordered(monkeypatch):
     """shapely < 2.1 kent voronoi_polygons(ordered=...) niet; de terugval moet dezelfde cellen geven."""
     import shapely
