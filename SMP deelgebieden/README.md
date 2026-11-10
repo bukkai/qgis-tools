@@ -20,5 +20,11 @@ Achtergrond, algoritme en keuzes: [`docs/BRIEF.md`](docs/BRIEF.md).
 ## Ontwikkelen
 Zie [`CLAUDE.md`](CLAUDE.md) voor structuur, afspraken en commando's.
 
+## Licentie
+De plugin (`smp_deelgebieden/`) valt onder de **GNU General Public License, versie 2 of later**
+(GPL-2.0-or-later), net als QGIS zelf; zie [`smp_deelgebieden/LICENSE`](smp_deelgebieden/LICENSE).
+Dat is ook wat de officiële QGIS-pluginrepository vraagt. De rest van de repository `qgis-tools` valt
+onder de MIT-licentie in de hoofdmap.
+
 ## Bronnen
 Testdata in `testdata/`: © OpenStreetMap-bijdragers, beschikbaar onder de Open Database License (ODbL).
