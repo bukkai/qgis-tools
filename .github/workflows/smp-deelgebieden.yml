@@ -1,0 +1,30 @@
+# Snelle tests van de plugin "SMP deelgebieden" (rekenkern, zonder QGIS).
+# Draait bij elke push die iets in de map van de plugin (of in deze workflow) verandert.
+name: SMP deelgebieden - tests
+
+on:
+  push:
+    paths:
+      - "SMP deelgebieden/**"
+      - ".github/workflows/smp-deelgebieden.yml"
+  workflow_dispatch:
+
+jobs:
+  snel:
+    name: pytest (niet traag)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: "SMP deelgebieden"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"   # zelfde als de Python in QGIS 3.34/3.44
+          cache: pip
+          cache-dependency-path: "SMP deelgebieden/requirements-dev.txt"
+      - name: Afhankelijkheden installeren
+        run: python -m pip install -r requirements-dev.txt
+      - name: Tests
+        run: python -m pytest -q -m "not traag"
