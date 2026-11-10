@@ -161,7 +161,7 @@ def test_indelen_invarianten(netwerk, grens, met_grenslijn):
         gl = list(geopandas.read_file(os.path.join(HIER, "..", "testdata", "grenslijn_rivierweg.gpkg"))
                   .to_crs(CRS).geometry)
     max_km = 7.0
-    uit = kern.indelen([dict(r) for r in netwerk], grens, max_km, gladheid=150, vereenvoudig=15,
+    uit = kern.indelen([dict(r) for r in netwerk], grens, max_km, gladheid=300, vereenvoudig=50,
                        grenslijnen=gl, log=lambda *_: None)
 
     # 1. dekking: elke (niet-losse) verplichte straat precies één keer 'tellen'

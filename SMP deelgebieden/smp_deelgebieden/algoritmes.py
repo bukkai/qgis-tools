@@ -475,7 +475,7 @@ class IndelenAlgoritme(QgsProcessingAlgorithm):
             "Max. oppervlakte (0 = geen): benadering via de omhullende van de straten.\n\n"
             "Gladheid (m): trekt vingers en uitstulpingen recht. Een straat waarvan de omgeving binnen "
             "deze afstand vooral bij een ander gebied hoort, gaat naar dat gebied, zolang beide rondes "
-            "onder het maximum blijven. 0 = uit, 150 = aanbevolen.\n\n"
+            "onder het maximum blijven. 0 = uit, standaard 300.\n\n"
             "Vaste grenzen (optioneel): lijnen die je zelf tekent, bijvoorbeeld langs een hoofdweg, spoor "
             "of watergang. Gebieden gaan daar nooit overheen. Laat de lijnen de projectgrens kruisen, "
             "anders delen ze niets op. Een straat die op zo'n lijn ligt, gaat in zijn geheel naar één kant.\n\n"
@@ -496,12 +496,12 @@ class IndelenAlgoritme(QgsProcessingAlgorithm):
             0.0, minValue=0))
         self.addParameter(QgsProcessingParameterNumber(
             self.GLADHEID, "Gladheid: vingers rechttrekken binnen (m, 0 = uit)", QgsProcessingParameterNumber.Double,
-            150.0, minValue=0))
+            300.0, minValue=0))
         self.addParameter(QgsProcessingParameterFeatureSource(
             self.GRENSLIJNEN, "Vaste grenzen (lijnen, bv. hoofdweg of water)",
             [QgsProcessing.TypeVectorLine, QgsProcessing.TypeVectorPolygon], optional=True))
         ver = QgsProcessingParameterNumber(self.VEREENVOUDIG, "Grenzen vereenvoudigen (m, alleen weergave)",
-                                           QgsProcessingParameterNumber.Double, 15.0, minValue=0)
+                                           QgsProcessingParameterNumber.Double, 50.0, minValue=0)
         ver.setFlags(ver.flags() | QgsProcessingParameterDefinition.FlagAdvanced)
         self.addParameter(ver)
         snap = QgsProcessingParameterNumber(self.SNAP, "Bijgetekende lijnen vastknopen binnen (m)",

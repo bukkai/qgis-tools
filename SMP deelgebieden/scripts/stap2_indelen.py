@@ -1,7 +1,7 @@
 """
 stap2_indelen.py - losse versie van "2. Deelgebieden en routes" (zonder QGIS).
 
-  python stap2_indelen.py --netwerk netwerk.gpkg --max_km 7 [--max_ha 40] [--gladheid 150]
+  python stap2_indelen.py --netwerk netwerk.gpkg --max_km 7 [--max_ha 40] [--gladheid 300]
                           [--grenslijnen grenzen.gpkg|lijnen] [--uit indeling.gpkg]
 
 Nodig: pip install geopandas shapely pyogrio networkx
@@ -21,9 +21,9 @@ def main():
     ap.add_argument("--max_km", type=float, default=7.0)
     ap.add_argument("--max_ha", type=float, default=None)
     ap.add_argument("--snap", type=float, default=0.5)
-    ap.add_argument("--gladheid", type=float, default=150, help="vingers rechttrekken binnen (m), 0 = uit")
+    ap.add_argument("--gladheid", type=float, default=300, help="vingers rechttrekken binnen (m), 0 = uit")
     ap.add_argument("--grenslijnen", default=None, help="GeoPackage-laag met vaste grenzen: pad.gpkg|laagnaam")
-    ap.add_argument("--vereenvoudig", type=float, default=15, help="grenzen vereenvoudigen (m)")
+    ap.add_argument("--vereenvoudig", type=float, default=50, help="grenzen vereenvoudigen (m)")
     ap.add_argument("--uit", default="indeling.gpkg")
     a = ap.parse_args()
 

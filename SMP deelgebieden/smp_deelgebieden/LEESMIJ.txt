@@ -19,7 +19,7 @@ Werkwijze
                          Steegje bijtekenen: snappen aan, status en gewicht invullen.
                          Wijzigingen opslaan!
   2. Deelgebieden en     netwerk + grens kiezen, max. km per ronde (en eventueel max. ha).
-     routes              Gladheid (standaard 150 m) trekt vingers/uitstulpingen recht.
+     routes              Gladheid (standaard 300 m) trekt vingers/uitstulpingen recht.
                          Vaste grenzen: zelf getekende lijnen (hoofdweg, spoor, water) waar
                          gebieden niet overheen gaan; laat ze de projectgrens kruisen.
                          Laadt deelgebieden, route_lijn en start; GPX per ronde naast de GeoPackage.

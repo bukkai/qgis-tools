@@ -64,15 +64,17 @@ rekenkern zonder QGIS-afhankelijkheid.
 - **Routelengte** = *rural postman*: alle verplichte stukken plus de verbindingen tussen losse delen (MST over kortste paden) plus een minimum-gewicht-koppeling van oneven knopen (`nx.min_weight_matching`, alleen de 10 dichtstbijzijnde kandidaten per knoop). Dat is inclusief doodlopende straten heen en terug. In het testgebied is de route ongeveer 40–50% langer dan de straatlengte.
 - **Indelen** (`_groei`): steeds het buitenste nog niet ingedeelde stuk als zaad nemen, stukken op netwerkafstand toevoegen (exponentieel + binair zoeken) tot de route vol is. Daarna kleine restgebieden samenvoegen en **gelijktrekken**: het kleinste budget zoeken dat hetzelfde aantal gebieden oplevert (langste ronde zo kort mogelijk).
 - **Zones**: zelf getekende grenslijnen delen de grens op met `polygonize`; elke zone, en elk los netwerkdeel, wordt apart ingedeeld. Een straat óp een grenslijn gaat als geheel naar één kant. Losse netwerkdelen met minder dan 300 m verplicht worden overgeslagen en gemeld (kolom `los`).
-- **Gladmaken** (`_maak_glad`, standaard 150 m): een straat waarvan de omgeving vooral bij een ander gebied hoort, verhuist, mits beide rondes binnen het maximum blijven. 150 m werkte het best (75 doet weinig, 250 minder goed).
+- **Gladmaken** (`_maak_glad`, standaard 300 m sinds v0.4.1): een straat waarvan de omgeving vooral bij een ander gebied hoort, verhuist, mits beide rondes binnen het maximum blijven. In de verkenning werkte 150 m het best (75 deed weinig, 250 minder goed); de gebruiker koos in v0.4.1 voor 300 m.
 - **Enclaves herstellen**: losliggende stukjes van een vlak naar het omringende gebied, als dat past.
-- **Vlakken**: Voronoi rond punten (om de 10 m) op de verplichte straten, per zone, geknipt op de zone; daarna `coverage_simplify` (15 m, alleen als shapely ≥ 2.1). Met shapely 2.0 (zonder `ordered=True`) wordt per punt de cel opgezocht; zelfde uitkomst.
+- **Vlakken**: Voronoi rond punten (om de 10 m) op de verplichte straten, per zone, geknipt op de zone; daarna `coverage_simplify` (standaard 50 m sinds v0.4.1, eerder 15 m; alleen als shapely ≥ 2.1, alleen de weergave van de vlakken). Met shapely 2.0 (zonder `ordered=True`) wordt per punt de cel opgezocht; zelfde uitkomst.
 - **Route**: Euler-circuit (`nx.eulerian_circuit`) op verplichte + extra stukken, met de start op de knoop die het dichtst bij het midden van het vlak ligt.
 - **Waarschuwingen** (het algoritme past niets aan, het meldt alleen):
   - een los eindpunt binnen 1 m van een andere lijn waar het niet mee verbonden is (`bijna_verbonden`), meestal een steegje bijgetekend zonder snappen;
   - een ronde langer dan het maximum. Dat kan alleen als één doodlopend stuk heen en terug al te lang is: `_groei` begint altijd met minstens het zaad.
 
 ## 5. Resultaten testgebied (Westervoort, ±385 ha)
+
+*Gemeten in de verkenning met gladheid 150 m en vereenvoudigen 15 m (de standaard tot v0.4.0).*
 
 | Variant | Verplicht | Gebieden (7 km) | Te fietsen | Rekentijd stap 2 |
 |---|---|---|---|---|
